@@ -97,17 +97,19 @@ int main(int argc, char *argv[]){
     fseek(fp_read, 0, SEEK_END);
     int file_size = ftell(fp_read);
     total_records = file_size / sizeof(Record);
-    int chunks = file_size/(block_num*block_size);
-    int records_per_block = block_size/sizeof(Record);
-    int remaining_chunk = file_size - (chunks*block_num*block_size);
-    int chunk_records = records_per_block*block_num;
-    int remaining_chunk_records = remaining_chunk/ sizeof(Record);
+    //find the number of chunks
+    int chunks = file_size/(block_num * block_size);
+    int records_per_block = block_size / sizeof(Record);
+    int remaining_chunk = file_size - (chunks * block_num * block_size);
+    //find the number of records in each chunk
+    int chunk_records = records_per_block * block_num;
+    int remaining_chunk_records = remaining_chunk / sizeof(Record);
 
     int sublist = chunks;
     if (remaining_chunk == 0){
         sublist++;
     }
-//    Record * buffer = (Record *) calloc (chunks, sizeof (Record));    
+
     if ((sublist+1) > total_mem/block_size){
         perror("Error: not enough memory allocated.");
         exit(1);
@@ -117,10 +119,10 @@ int main(int argc, char *argv[]){
     fseek(fp_read, 0, SEEK_SET);
     int i = 0;
 
-    while (i<chunks+1) {
+    while (i < chunks+1) {
         FILE *fp_write;
         char output_file[MAX_PATH_LENGTH];
-        snprintf(output_file, sizeof(char) * MAX_PATH_LENGTH, "output%1.dat", i);
+        snprintf(output_file, sizeof(char) * MAX_PATH_LENGTH, "output%d.dat", i);
         if (!(fp_write = fopen ( output_file , "wb" ))) {
             printf ("Error when writing file sorted_list  \n");
             exit(1);
@@ -141,7 +143,6 @@ int main(int argc, char *argv[]){
         } else {
             Record * buffer = (Record *) calloc (chunk_records, sizeof (Record));
             int r = fread (buffer, sizeof(Record), chunk_records, fp_read);
-
             qsort (buffer, chunk_records, sizeof(Record), compare);
             fwrite(buffer, sizeof(Record), chunk_records, fp_write);
             print_buffer(buffer, total_records);

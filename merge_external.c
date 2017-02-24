@@ -122,25 +122,123 @@ int insert_into_heap (MergeManager * merger, int run_id, Record *input){
 */
 
 int init_merge (MergeManager * manager) {
+	/*
+	 * The merge starts with pre-filling of input buffer arrays with records from each run.
+	 * The suggestion is to add the heads of each array to a heap data structure, and then remove an element from the top of the heap,
+	 * transfer it to the output buffer, and insert into the heap the next element from the same run as the element being transferred.
+	*/
+	FILE *fp;
+	for(int n = 0; n < manager->heap_capacity; n++){
+		char file_number[MAX_PATH_LENGTH];
+		char * file_name = (char *) calloc(MAX_PATH_LENGTH,sizeof(char));
+		sprintf(file_number,"%d",manager->input_file_numbers[n]);
+		strcat(file_name,manager->input_prefix);
+		strcat(file_name,file_number);
+		strcat(file_name,".dat");
+		if (fp = fopen (file_name , "rb" )){
+			// Success case
+			fseek(fp, manager->current_input_file_positions[n]*sizeof(Record), SEEK_SET);
+			int result = fread (manager->input_buffers[n], sizeof(Record), manager->input_buffer_capacity, fp);
+			//
+			if (result <= 0) {
+				manager->current_heap_size -= 1;
+			}
+			manager->total_input_buffer_elements[n] = result;
+			manager->current_input_file_positions[n] =  result;
+			insert_into_heap(manager, manager->input_file_numbers[n], &manager->input_buffers[n][manager->current_input_buffer_positions[n]]);
+			manager->current_input_buffer_positions[n]++;
+			
+		} else {
+			free(file_name);
+			return FAILURE;
+		}
+		fclose(fp);
+		free(file_name);
+	}
+
 	return SUCCESS;
 }
 
 int flush_output_buffer (MergeManager * manager) {
+	FILE *fp_write;
+	if (!(fp_write = fopen (manager->output_file_name , "a" ))){
+		return FAILURE;
+	}
+
+	fwrite(manager->output_buffer, sizeof(Record), manager->current_output_buffer_position, fp_write);
+	fflush (fp_write);
+	fclose(fp_write);
+	manager->current_output_buffer_position = 0;
 	return SUCCESS;
 }
 
 int get_next_input_element(MergeManager * manager, int file_number, Record *result) {
+
+	if(manager->total_input_buffer_elements[file_number] == manager->current_input_buffer_positions[file_number]){
+		manager->current_input_buffer_positions[file_number] = 0;
+
+		if(manager->current_input_file_positions[file_number] == -1){
+			return EMPTY;
+		}
+
+		if(refill_buffer (manager, file_number)!=SUCCESS){
+			return FAILURE;
+		}
+
+	}
+	manager->current_input_buffer_positions[file_number]+=1;
+	*result = manager->input_buffers[file_number][manager->current_input_buffer_positions[file_number]];
+
 	return SUCCESS;
 }
 
 int refill_buffer (MergeManager * manager, int file_number) {
+	FILE *fp;
+	char file_num[100];
+
+	sprintf(file_num,"%d",manager->input_file_numbers[file_number]);
+	char * filename = (char *) calloc(MAX_PATH_LENGTH,sizeof(char));
+	strcat(filename,"output");
+	strcat(filename,file_num);
+	strcat(filename,".dat");
+	if (!(fp = fopen (filename , "rb" ))){
+		free(filename);
+		return FAILURE;
+
+	}else{
+		fseek(fp, manager->current_input_file_positions[file_number]*sizeof(Record), SEEK_SET);
+		int result = fread (manager->input_buffers[file_number], sizeof(Record), manager->input_buffer_capacity, fp);
+		if(result <= 0){
+			manager->current_input_file_positions[file_number] = -1;
+		}else{
+			manager->current_input_file_positions[file_number]+= result;
+			// if(result < manager->input_buffer_capacity){
+			// 	manager->current_input_file_positions[file_number] = -1;
+			// }
+			manager->total_input_buffer_elements[file_number] = result;
+		}
+
+	}
+	free(filename);
+	fclose(fp);
 	return SUCCESS;
 }
 
 void clean_up (MergeManager * merger) {
+	for(int x = 0; x < merger->heap_capacity; x++){
+		free(merger->input_buffers[x]);
+	}
+	free(merger->output_buffer);
+	free(merger->heap);
+	free(merger);
+	printf("Clean up completed.\n");
 	
 }
 
 int compare_heap_elements (HeapElement *a, HeapElement *b) {
+	if ((a->UID2>b->UID2)){
+	//	if ((a->UID2-b->UID2)>0){
+		return 1;
+	}
 	return 0;
 }

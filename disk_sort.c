@@ -25,13 +25,6 @@ int compare (const void *a, const void *b) {
 
 //Sort function that uses qsort, some codes are from handout
 void sort(Record* buffer, int total_records){
-    /**
- * Arguments:
- * 1 - an array to sort
- * 2 - size of an array
- * 3 - size of each array element
- * 4 - function to compare two elements of the array
- */
     qsort (buffer, total_records, sizeof(Record), compare);
 }
 
@@ -43,67 +36,125 @@ void print_buffer(Record* buffer, int total_records){
     }
 }
 
-// function for Phase 1 of 2PMMS
-int phase1(char* input_file, int total_mem, int block_size){
-    FILE *fp_read, *fp_write;
-    char *prefix = "sorted_list";
-    int total_records;
+//function for initializing the manager to pass to merge_run
+int merge_runs_init(int block_size, int total_mem, int buffer_num) {
+    MergeManager * manager = (MergeManager *)calloc(1, sizeof(MergeManager));
+    //set up attributes of MergeManager shown in merge.h
+    int records_per_buffer = (total_mem / sizeof(Record)) / buffer_num + 1;
+    manager->heap_capacity = buffer_num;
+    manager->heap = (HeapElement *)calloc(buffer_num, sizeof(HeapElement));
+    strcpy(manager->input_prefix, "output");
+    strcpy(manager->output_file_name , "sorted_merge.dat");
+    manager->output_buffer_capacity = records_per_buffer;
+    manager->input_buffer_capacity = records_per_buffer;
 
+    int input_file_numbers[buffer_num];
+    int current_file_positions[buffer_num];
+    int current_buffer_positions[buffer_num];
+    int total_input_buffer_elements[buffer_num];
+    Record** input_buffers = (Record**) malloc(buffer_num * sizeof(Record *));
+    int i;
+    for(i = 0; i < buffer_num; i++){
+        input_file_numbers[i] = i;
+        current_file_positions[i] = 0;
+        current_buffer_positions[i] = 0;
+        total_input_buffer_elements[i] = 0;
+        input_buffers[i] = (Record *)calloc(records_per_buffer, sizeof(Record));
+    }
+    manager->input_file_numbers = input_file_numbers;
+    manager->output_buffer = (Record *)calloc(records_per_buffer, sizeof(Record));
+    manager->current_output_buffer_position = 0;
+    manager->input_buffers = input_buffers;
+    manager->current_input_file_positions = current_file_positions;
+    manager->current_input_buffer_positions = current_buffer_positions;
+    manager->total_input_buffer_elements = total_input_buffer_elements;
+    // calls merge_runs in merge_external.c
+    merge_runs(manager);
+    return 0;
+}
+
+// function for Phase 1 of 2PMMS
+int main(int argc, char *argv[]){
+
+    char *input_file = argv[1];
+    int total_mem = atoi(argv[2]);
+    int block_size = atoi(argv[3]);
+    FILE *fp_read;
+    int total_records;
 
     //check if enough memory
     if(block_size > total_mem){
         exit(0);
     }
-    int block_num = (total_mem / block_size) / 2;
-    if (block_num < 1){
-        printf("Error: insufficient memory.\n");
-        exit(1);
-    }
-
-    int chunks = block_num * block_size / sizeof(Record);
+    int block_num = (total_mem / block_size);
 
     if (!(fp_read= fopen (input_file , "r" ))) {
         printf ("Error when reading file \"%s\"\n", input_file);
         exit(0);
     }
 
-
-
     /*finding the file size and total number of records*/
     fseek(fp_read, 0, SEEK_END);
     int file_size = ftell(fp_read);
     total_records = file_size / sizeof(Record);
-    fseek(fp_read, 0, SEEK_SET);
-    int temp_total = total_records;
-    int i = 0;
+    int chunks = file_size/(block_num*block_size);
+    int records_per_block = block_size/sizeof(Record);
+    int remaining_chunk = file_size - (chunks*block_num*block_size);
+    int chunk_records = records_per_block*block_num;
+    int remaining_chunk_records = remaining_chunk/ sizeof(Record);
 
-    Record * buffer = (Record *) calloc (chunks, sizeof (Record));
-
-    while (temp_total > 0){
-        int read_records = fread(buffer, sizeof(Record), chunks, fp_read);
-        if (read_records < 0) {
-            printf ("Error when reading file \"%s\" \n", input_file);
-            exit(1);
-        } else {
-            // sort list then write to disk
-            sort(buffer, temp_total);
-            //save contents of each iteration into different files.
-            char output_file[MAX_PATH_LENGTH];
-            snprintf(output_file, sizeof(char) * MAX_PATH_LENGTH, "sorted_list%1.dat", i);
-            if (!(fp_write = fopen ( output_file , "wb" ))) {
-                printf ("Error when writing file sorted_list  \n");
-                exit(0);
-            }
-    	    fwrite (buffer, sizeof(Record), read_records, fp_write);
-            fclose(fp_write);
-
-            temp_total -= read_records;
-            i++;
-        }
+    int sublist = chunks;
+    if (remaining_chunk == 0){
+        sublist++;
+    }
+//    Record * buffer = (Record *) calloc (chunks, sizeof (Record));    
+    if ((sublist+1) > total_mem/block_size){
+        perror("Error: not enough memory allocated.");
+        exit(1);
     }
 
-    free(buffer);
-    fclose(fp_read);
+    //reset pointer location
+    fseek(fp_read, 0, SEEK_SET);
+    int i = 0;
 
-    return i;
+    while (i<chunks+1) {
+        FILE *fp_write;
+        char output_file[MAX_PATH_LENGTH];
+        snprintf(output_file, sizeof(char) * MAX_PATH_LENGTH, "output%1.dat", i);
+        if (!(fp_write = fopen ( output_file , "wb" ))) {
+            printf ("Error when writing file sorted_list  \n");
+            exit(1);
+        }
+        if (i == chunks){
+            if(remaining_chunk != 0){
+                Record * buffer = (Record *) calloc (remaining_chunk_records, sizeof (Record));
+                int r = fread (buffer, sizeof(Record), remaining_chunk_records, fp_read);
+                qsort (buffer, remaining_chunk_records, sizeof(Record), compare);
+                fwrite(buffer, sizeof(Record), remaining_chunk_records, fp_write);
+                print_buffer(buffer, total_records);
+                fflush (fp_write);
+                free (buffer);
+            } else {
+                break;
+            }
+
+        } else {
+            Record * buffer = (Record *) calloc (chunk_records, sizeof (Record));
+            int r = fread (buffer, sizeof(Record), chunk_records, fp_read);
+
+            qsort (buffer, chunk_records, sizeof(Record), compare);
+            fwrite(buffer, sizeof(Record), chunk_records, fp_write);
+            print_buffer(buffer, total_records);
+            fflush (fp_write);
+            free(buffer);
+        }
+        free(output_file);
+        fclose(fp_write);
+        i++;
+
+    }
+    fclose(fp_read);
+    //merge here
+    merge_runs_init(block_size, total_mem, sublist+1);
+    return 0;
 }

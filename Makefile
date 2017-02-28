@@ -15,7 +15,7 @@ MAIN_SRC=main.c
 
 
  
-all: write_blocks_seq read_blocks_seq
+all: disk_sort merge_external
 
 
 disk_sort: $(DISK_SORT_SRC) $(MAIN_SRC)

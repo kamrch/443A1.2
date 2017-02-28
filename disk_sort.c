@@ -149,7 +149,7 @@ int main(int argc, char *argv[]){
             fflush (fp_write);
             free(buffer);
         }
-        free(output_file);
+        //free(output_file);
         fclose(fp_write);
         i++;
 

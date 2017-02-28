@@ -22,10 +22,11 @@ int main(int argc, char **argv){
     }
 
     int records_per_block = block_size / sizeof(Record);
+    //Record * buffer = (Record * ) calloc(records_per_block, sizeof(Record));
     Record * buffer = calloc(records_per_block, sizeof(Record));
 
     FILE *fp_read;
-    if (!(fp_read = fopen (file_name , "rb" ))){
+    if (!(fp_read = fopen (file_name , "rb"))){
 		perror("Error in distribution.c: fp_read fopen error.\n");
 		exit(1);
 	}
@@ -38,6 +39,10 @@ int main(int argc, char **argv){
 	} else if (strcmp(column_id, "UID2") == 0) {
         // case UID2
         strcat(output_file_name, "2");
+    } else {
+        // incorrect input case
+        printf("Error: <column_id> must be only either 'UID1' or 'UID2'.\n");
+        exit(1);
     }
 
     strcat(output_file_name, ".txt");
@@ -46,14 +51,53 @@ int main(int argc, char **argv){
         exit(1);
     }
 
-    int i = 0;
-    int read = 0;
+    int counter = 0;
+    int curr_id = -1;
+    int read_records = 0;
 
 
-    while ((read = fread(buffer, sizeof(Record), records_per_block, fp_read)) > 0) {
-        int pointer = 0;
+    while ((read_records = fread(buffer, sizeof(Record), records_per_block, fp_read)) > 0) {
+        int pointer;
         records_per_block = block_size / sizeof(Record);
 
-    }
+        //Check if total number of records read from the file is less than 1 block
+        if (records_per_block != read_records){
+            records_per_block = read_records;
+        }
 
+        for (pointer = 0; pointer < records_per_block; pointer++){
+            //init case
+            if (curr_id == -1){
+                if (strcmp(column_id, "UID1")==0){
+                    curr_id = buffer[pointer].uid1;
+                } else {
+                    curr_id = buffer[pointer].uid2;
+                }
+            }
+
+
+            if (strcmp(column_id, "UID1")==0 && curr_id != buffer[pointer].uid1){
+                results[counter]++;
+                counter = 0;
+                curr_id = buffer[pointer].uid1;
+            } else if (strcmp(column_id, "UID2" && curr_id != buffer[pointer].uid2)==0){
+                results[counter]++;
+                counter = 0;
+                curr_id = buffer[pointer].uid2;
+            }
+
+            counter ++;
+        }
+    }
+    results[counter]++;
+    //writing results to output file
+    for (int z = 0; z <= max_degree; z++){
+        if (results[z] != 0){
+            fprintf(fp_write, "%d, %d\n", z, results[z]);            
+        }        
+    }
+    fclose(fp_write);
+    fclose(fp_read);
+    free(buffer);
+    return 0;
 }

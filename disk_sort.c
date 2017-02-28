@@ -15,10 +15,8 @@
 
 //taken from handout
 int compare (const void *a, const void *b) {
-    Record r1 = *(Record*) a;
-    Record r2 = *(Record*) b;
-    int a_f = r1.UID2;
-    int b_f = r2.UID2;
+    int a_f = ((const struct record*) a)->UID2;
+    int b_f = ((const struct record*) b)->UID2;
     return (a_f - b_f);
 }
 
@@ -40,12 +38,22 @@ void print_buffer(Record* buffer, int total_records){
 int merge_runs_init(int block_size, int total_mem, int buffer_num) {
     MergeManager * manager = (MergeManager *)calloc(1, sizeof(MergeManager));
     //set up attributes of MergeManager shown in merge.h
-    int records_per_buffer = (total_mem / sizeof(Record)) / buffer_num + 1;
+    int records_per_block = block_size / sizeof(Record);
+    int block_num = total_mem / block_size;
+    int blocks_per_buffer = block_num / (buffer_num+1);
+    int records_per_buffer = records_per_block * blocks_per_buffer;
+
     manager->heap_capacity = buffer_num;
     manager->heap = (HeapElement *)calloc(buffer_num, sizeof(HeapElement));
     strcpy(manager->input_prefix, "output");
     strcpy(manager->output_file_name , "sorted_merge.dat");
-    manager->output_buffer_capacity = records_per_buffer;
+    if (block_num % (buffer_num+1) > 0){
+        int remaining_block = block_num % (buffer_num+1);
+        manager->output_buffer_capacity = records_per_buffer + records_per_block * remaining_block;
+    }
+    else {
+        manager->output_buffer_capacity = records_per_buffer;
+    }
     manager->input_buffer_capacity = records_per_buffer;
 
     int input_file_numbers[buffer_num];
@@ -62,7 +70,7 @@ int merge_runs_init(int block_size, int total_mem, int buffer_num) {
         input_buffers[i] = (Record *)calloc(records_per_buffer, sizeof(Record));
     }
     manager->input_file_numbers = input_file_numbers;
-    manager->output_buffer = (Record *)calloc(records_per_buffer, sizeof(Record));
+    manager->output_buffer = (Record *)calloc(manager->output_buffer_capacity, sizeof(Record));
     manager->current_output_buffer_position = 0;
     manager->input_buffers = input_buffers;
     manager->current_input_file_positions = current_file_positions;
@@ -80,15 +88,15 @@ int main(int argc, char *argv[]){
     int total_mem = atoi(argv[2]);
     int block_size = atoi(argv[3]);
     FILE *fp_read;
-    int total_records;
 
     //check if enough memory
     if(block_size > total_mem){
+        printf("Error: Block size is larger than total memory.\n");
         exit(0);
     }
     int block_num = (total_mem / block_size);
 
-    if (!(fp_read= fopen (input_file , "r" ))) {
+    if (!(fp_read= fopen (input_file , "rb" ))) {
         printf ("Error when reading file \"%s\"\n", input_file);
         exit(0);
     }
@@ -96,7 +104,7 @@ int main(int argc, char *argv[]){
     /*finding the file size and total number of records*/
     fseek(fp_read, 0, SEEK_END);
     int file_size = ftell(fp_read);
-    total_records = file_size / sizeof(Record);
+    int total_records = file_size / sizeof(Record);
     //find the number of chunks
     int chunks = file_size/(block_num * block_size);
     int records_per_block = block_size / sizeof(Record);

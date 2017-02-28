@@ -32,7 +32,7 @@ void sort(Record* buffer, int total_records){
 void print_buffer(Record* buffer, int total_records){
     printf("=====Total records: %d\n=====", total_records);
     for (int i=0; i<total_records; i++){
-        printf("uid2 = %d, uid1 = %d\n", buffer[i].UID2, buffer[i].UID1);
+        printf("uid2 = %i, uid1 = %i\n", buffer[i].UID2, buffer[i].UID1);
     }
 }
 
@@ -130,7 +130,9 @@ int main(int argc, char *argv[]){
         if (i == chunks){
             if(remaining_chunk != 0){
                 Record * buffer = (Record *) calloc (remaining_chunk_records, sizeof (Record));
-                int r = fread (buffer, sizeof(Record), remaining_chunk_records, fp_read);
+                if (fread (buffer, sizeof(Record), remaining_chunk_records, fp_read) == 0){
+                    perror("Error: Failed reading buffer.\n");
+                }
                 qsort (buffer, remaining_chunk_records, sizeof(Record), compare);
                 fwrite(buffer, sizeof(Record), remaining_chunk_records, fp_write);
                 print_buffer(buffer, total_records);
@@ -142,7 +144,9 @@ int main(int argc, char *argv[]){
 
         } else {
             Record * buffer = (Record *) calloc (chunk_records, sizeof (Record));
-            int r = fread (buffer, sizeof(Record), chunk_records, fp_read);
+            if (fread (buffer, sizeof(Record), chunk_records, fp_read) == 0){
+                perror("Error: Failed reading buffer.\n");
+            }
             qsort (buffer, chunk_records, sizeof(Record), compare);
             fwrite(buffer, sizeof(Record), chunk_records, fp_write);
             print_buffer(buffer, total_records);

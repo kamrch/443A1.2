@@ -135,7 +135,7 @@ int init_merge (MergeManager * manager) {
 		strcat(file_name,manager->input_prefix);
 		strcat(file_name,file_number);
 		strcat(file_name,".dat");
-		if (fp = fopen (file_name , "rb" )){
+		if ((fp = fopen (file_name , "rb" ))){
 			// Success case
 			fseek(fp, manager->current_input_file_positions[n]*sizeof(Record), SEEK_SET);
 			int result = fread (manager->input_buffers[n], sizeof(Record), manager->input_buffer_capacity, fp);

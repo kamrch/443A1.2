@@ -17,7 +17,7 @@ int main(int argc, char **argv){
 
     /* initialize the result array */
     for (int z=0; z<max_degree+1; z++){
-    	results[z] = 0;	
+        results[z] = 0; 
     }
 
     int records_per_block = block_size / sizeof(Record);
@@ -26,12 +26,13 @@ int main(int argc, char **argv){
 
     FILE *fp_read;
     if (!(fp_read = fopen (file_name , "rb"))){
-		perror("Error in distribution.c: fp_read fopen error.\n");
-		exit(1);
-	}
+        perror("Error in distribution.c: fp_read fopen error.\n");
+        exit(1);
+    }
+
 
 	FILE *fp_write;
-	char output_file_name[] = "merged";
+	char output_file_name[20] = "merged";
 	if (strcmp(column_id, "UID1") == 0){
 		// case UID1
 		strcat(output_file_name, "1");
@@ -44,7 +45,8 @@ int main(int argc, char **argv){
         exit(1);
     }
 
-    strcat(output_file_name, ".txt");
+    strcat(output_file_name, ".dat");
+    // printf("%s\n", output_file_name);
     if (!(fp_write = fopen(output_file_name, "wb"))) {
         printf("Error in distribution.c: fp_write fopen error.  \n");
         exit(1);

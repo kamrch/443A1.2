@@ -29,4 +29,4 @@ distribution: $(DISTRIBUTION_SRC)
 	$(CC) $(CFLAGS) $^ -o distribution
 
 clean:  
-	rm disk_sort merge_external output*.dat distribution
+	rm disk_sort merge_external output*.dat distribution merged*.dat

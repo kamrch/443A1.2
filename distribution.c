@@ -58,7 +58,7 @@ int main(int argc, char **argv){
 
 
     while ((read_records = fread(buffer, sizeof(Record), records_per_block, fp_read)) > 0) {
-        int pointer;
+        int i;
         records_per_block = block_size / sizeof(Record);
 
         //Check if total number of records read from the file is less than 1 block
@@ -66,25 +66,25 @@ int main(int argc, char **argv){
             records_per_block = read_records;
         }
 
-        for (pointer = 0; pointer < records_per_block; pointer++){
+        for (i = 0; i < records_per_block; i++){
             //init case
             if (curr_id == -1){
                 if (strcmp(column_id, "UID1")==0){
-                    curr_id = buffer[pointer].UID1;
+                    curr_id = buffer[i].UID1;
                 } else {
-                    curr_id = buffer[pointer].UID2;
+                    curr_id = buffer[i].UID2;
                 }
             }
 
 
-            if (strcmp(column_id, "UID1")==0 && curr_id != buffer[pointer].UID1){
+            if (strcmp(column_id, "UID1")==0 && curr_id != buffer[i].UID1){
                 results[counter]++;
                 counter = 0;
-                curr_id = buffer[pointer].UID1;
-            } else if (strcmp(column_id, "UID2")==0 && curr_id != buffer[pointer].UID2){
+                curr_id = buffer[i].UID1;
+            } else if (strcmp(column_id, "UID2")==0 && curr_id != buffer[i].UID2){
                 results[counter]++;
                 counter = 0;
-                curr_id = buffer[pointer].UID2;
+                curr_id = buffer[i].UID2;
             }
 
             counter ++;

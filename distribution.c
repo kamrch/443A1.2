@@ -13,7 +13,6 @@ int main(int argc, char **argv){
     int block_size = atoi(argv[2]);
     char* column_id = argv[3];
     int max_degree = atoi(argv[4]);
-    FILE *fp_read;
     int results[max_degree+1];
 
     /* initialize the result array */
@@ -69,21 +68,21 @@ int main(int argc, char **argv){
             //init case
             if (curr_id == -1){
                 if (strcmp(column_id, "UID1")==0){
-                    curr_id = buffer[pointer].uid1;
+                    curr_id = buffer[pointer].UID1;
                 } else {
-                    curr_id = buffer[pointer].uid2;
+                    curr_id = buffer[pointer].UID2;
                 }
             }
 
 
-            if (strcmp(column_id, "UID1")==0 && curr_id != buffer[pointer].uid1){
+            if (strcmp(column_id, "UID1")==0 && curr_id != buffer[pointer].UID1){
                 results[counter]++;
                 counter = 0;
-                curr_id = buffer[pointer].uid1;
-            } else if (strcmp(column_id, "UID2" && curr_id != buffer[pointer].uid2)==0){
+                curr_id = buffer[pointer].UID1;
+            } else if (strcmp(column_id, "UID2")==0 && curr_id != buffer[pointer].UID2){
                 results[counter]++;
                 counter = 0;
-                curr_id = buffer[pointer].uid2;
+                curr_id = buffer[pointer].UID2;
             }
 
             counter ++;

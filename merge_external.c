@@ -180,7 +180,7 @@ int get_next_input_element(MergeManager * manager, int file_number, Record *resu
 
 	if(manager->total_input_buffer_elements[file_number] == manager->current_input_buffer_positions[file_number]){
 		manager->current_input_buffer_positions[file_number] = 0;
-
+        // non SUCCESSFUL CASE
 		if(manager->current_input_file_positions[file_number] == -1){
 			return EMPTY;
 		}
@@ -202,50 +202,52 @@ int refill_buffer (MergeManager * manager, int file_number) {
 	FILE *fp;
 	char file_num[100];
 
-	if (manager->current_input_file_positions[file_number] == -1)
-
+    //Defining output file name
 	sprintf(file_num,"%d",manager->input_file_numbers[file_number]);
 	char * filename = (char *) calloc(MAX_PATH_LENGTH,sizeof(char));
 	strcat(filename,"output");
 	strcat(filename,file_num);
 	strcat(filename,".dat");
 
-	if (!(fp = fopen (filename , "rb" ))){
-		free(filename);
-		return FAILURE;
-
-	}else{
-		fseek(fp, manager->current_input_file_positions[file_number]*sizeof(Record), SEEK_SET);
-		int result = fread (manager->input_buffers[file_number], sizeof(Record), manager->input_buffer_capacity, fp);
-		if(result <= 0){
-			manager->current_input_file_positions[file_number] = -1;
-		}else{
-			manager->total_input_buffer_elements[file_number] = result;
-			manager->current_input_file_positions[file_number]+= result;
-		}
-
+	if (fp = fopen (filename , "rb" )){
+        fseek(fp, manager->current_input_file_positions[file_number]*sizeof(Record), SEEK_SET);
+        int result = fread (manager->input_buffers[file_number], sizeof(Record), manager->input_buffer_capacity, fp);
+        if(result > 0){
+            manager->total_input_buffer_elements[file_number] = result;
+            manager->current_input_file_positions[file_number]+= result;
+        }else{
+            manager->current_input_file_positions[file_number] = -1;
+        }
+    }else{
+        free(filename);
+        return FAILURE;
 	}
 	free(filename);
 	fclose(fp);
+
 	return SUCCESS;
 }
 
 void clean_up (MergeManager * merger) {
-	printf("Starting 'clean_up....\n");
+//	printf("Starting 'clean_up....\n");
 	for(int x = 0; x < merger->heap_capacity; x++){
 		free(merger->input_buffers[x]);
 	}
 	free(merger->output_buffer);
+	free(merger->input_file_numbers);
+    free(merger->current_input_buffer_positions);
 	free(merger->heap);
 	free(merger);
-	printf("End of 'clean_up.\n");
+//	printf("End of 'clean_up.\n");
 	
 }
 
 int compare_heap_elements (HeapElement *a, HeapElement *b) {
-	if ((a->UID2>b->UID2)){
+	if (a.UID2>b.UID2){
 	//	if ((a->UID2-b->UID2)>0){
 		return 1;
-	}
+	} else if ((a.UID2==b.UID2) && (a->UID1>b->UID1)){
+        return 1;
+    }
 	return 0;
 }

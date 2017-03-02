@@ -143,7 +143,7 @@ int main(int argc, char *argv[]){
                 }
                 qsort (buffer, remaining_chunk_records, sizeof(Record), compare);
                 fwrite(buffer, sizeof(Record), remaining_chunk_records, fp_write);
-                print_buffer(buffer, total_records);
+                //print_buffer(buffer, total_records);
                 fflush (fp_write);
                 free (buffer);
             } else {
@@ -157,7 +157,7 @@ int main(int argc, char *argv[]){
             }
             qsort (buffer, chunk_records, sizeof(Record), compare);
             fwrite(buffer, sizeof(Record), chunk_records, fp_write);
-            print_buffer(buffer, total_records);
+            //print_buffer(buffer, total_records);
             fflush (fp_write);
             free(buffer);
         }

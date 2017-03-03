@@ -209,7 +209,7 @@ int refill_buffer (MergeManager * manager, int file_number) {
 	strcat(filename,file_num);
 	strcat(filename,".dat");
 
-	if (fp = fopen (filename , "rb" )){
+	if ((fp = fopen (filename , "rb" ))){
         fseek(fp, manager->current_input_file_positions[file_number]*sizeof(Record), SEEK_SET);
         int result = fread (manager->input_buffers[file_number], sizeof(Record), manager->input_buffer_capacity, fp);
         if(result > 0){
@@ -243,10 +243,10 @@ void clean_up (MergeManager * merger) {
 }
 
 int compare_heap_elements (HeapElement *a, HeapElement *b) {
-	if (a.UID2>b.UID2){
+	if (a->UID2>b->UID2){
 	//	if ((a->UID2-b->UID2)>0){
 		return 1;
-	} else if ((a.UID2==b.UID2) && (a->UID1>b->UID1)){
+	} else if ((a->UID2==b->UID2) && (a->UID1>b->UID1)){
         return 1;
     }
 	return 0;

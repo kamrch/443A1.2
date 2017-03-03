@@ -84,6 +84,11 @@ int merge_runs_init(int block_size, int total_mem, int buffer_num) {
 // function for Phase 1 of 2PMMS
 int main(int argc, char *argv[]){
 
+    if (argc != 4){
+        printf ("Usage: disk_sort <file_name> <total_memory> <block_size>\n");
+        exit(1);
+    }
+
     char *input_file = argv[1];
     int total_mem = atoi(argv[2]);
     int block_size = atoi(argv[3]);
@@ -104,7 +109,7 @@ int main(int argc, char *argv[]){
     /*finding the file size and total number of records*/
     fseek(fp_read, 0, SEEK_END);
     int file_size = ftell(fp_read);
-    int total_records = file_size / sizeof(Record);
+    // int total_records = file_size / sizeof(Record);
     //find the number of chunks
     int chunks = file_size/(block_num * block_size);
     int records_per_block = block_size / sizeof(Record);

@@ -140,6 +140,7 @@ int main(int argc, char *argv[]){
     while (i < chunks+1) {
         FILE *fp_write;
         char output_file[MAX_PATH_LENGTH];
+        // output file name construction
         snprintf(output_file, sizeof(char) * MAX_PATH_LENGTH, "output%d.dat", i);
         if (!(fp_write = fopen ( output_file , "wb" ))) {
             printf ("Error when writing file sorted_list  \n");

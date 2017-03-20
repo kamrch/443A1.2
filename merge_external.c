@@ -130,12 +130,21 @@ int init_merge (MergeManager * manager) {
 	// printf("hiasdsad\n");
 	FILE *fp;
 	for(int n = 0; n < manager->heap_capacity; n++){
-		char file_number[MAX_PATH_LENGTH];
-		char * file_name = (char *) calloc(MAX_PATH_LENGTH,sizeof(char));
-		sprintf(file_number,"%d",manager->input_file_numbers[n]);
-		strcat(file_name,manager->input_prefix);
-		strcat(file_name,file_number);
-		strcat(file_name,".dat");
+
+        // output file name construction
+        char file_number[MAX_PATH_LENGTH];
+        sprintf(file_number,"%d",manager->input_file_numbers[n]);
+
+        char output_file[MAX_PATH_LENGTH];
+        snprintf(output_file, sizeof(char) * MAX_PATH_LENGTH, "output%d.dat", file_number);
+
+
+//        char * output_file = (char *) calloc(MAX_PATH_LENGTH,sizeof(char));
+//        strcat(output_file,manager->input_prefix);
+//		strcat(output_file,file_number);
+//		strcat(output_file,".dat");
+
+
 		if ((fp = fopen (file_name , "rb" ))){
 			// printf ("fopen success\n");
 			fseek(fp, manager->current_input_file_positions[n]*sizeof(Record), SEEK_SET);
@@ -150,12 +159,12 @@ int init_merge (MergeManager * manager) {
 			
 		} else {
 			// printf ("here 11111\n");
-			free(file_name);
+//			free(output_file);
 			return FAILURE;
 		}
 		// printf ("here 22222\n");
 		fclose(fp);
-		free(file_name);
+//		free(output_file);
 	}
 
 	return SUCCESS;
@@ -169,10 +178,11 @@ int flush_output_buffer (MergeManager * manager) {
 	}
 
 	fwrite(manager->output_buffer, sizeof(Record), manager->current_output_buffer_position, fp_write);
+
 	fflush (fp_write);
 	fclose(fp_write);
 
-
+    // Reset the pointer location
 	manager->current_output_buffer_position = 0;
 
 
@@ -183,8 +193,8 @@ int get_next_input_element(MergeManager * manager, int file_number, Record *resu
 
 	if(manager->total_input_buffer_elements[file_number] == manager->current_input_buffer_positions[file_number]){
 		manager->current_input_buffer_positions[file_number] = 0;
-        // non SUCCESSFUL CASE
 		if(refill_buffer (manager, file_number)!=0){
+            //non-SUCCESSFUL case
 			return FAILURE;
 		}
 		
@@ -195,8 +205,8 @@ int get_next_input_element(MergeManager * manager, int file_number, Record *resu
 
 	}
 
-
 	*result = manager->input_buffers[file_number][manager->current_input_buffer_positions[file_number]];
+    //increment the currentinput buffer position for the next input element
 	manager->current_input_buffer_positions[file_number]+=1;
 
 	return SUCCESS;
@@ -206,32 +216,38 @@ int refill_buffer (MergeManager * manager, int file_number) {
 	FILE *fp;
 	char file_num[100];
 
-    //Defining output file name
+    // output file name construction
 	sprintf(file_num,"%d",manager->input_file_numbers[file_number]);
-	char * filename = (char *) calloc(MAX_PATH_LENGTH,sizeof(char));
-	strcat(filename,"output");
-	strcat(filename,file_num);
-	strcat(filename,".dat");
 
-	if ((fp = fopen (filename , "rb" ))){
+
+    char output_file[MAX_PATH_LENGTH];
+    snprintf(output_file, sizeof(char) * MAX_PATH_LENGTH, "output%d.dat", file_num);
+
+//	char * filename = (char *) calloc(MAX_PATH_LENGTH,sizeof(char));
+//	strcat(filename,"output");
+//	strcat(filename,file_num);
+//	strcat(filename,".dat");
+
+	if ((fp = fopen (output_file , "rb" ))){
         fseek(fp, manager->current_input_file_positions[file_number]*sizeof(Record), SEEK_SET);
         int result = fread (manager->input_buffers[file_number], sizeof(Record), manager->input_buffer_capacity, fp);
         if(result > 0){
             manager->total_input_buffer_elements[file_number] = result;
             manager->current_input_file_positions[file_number]+= result;
         }else{
+            //
             manager->current_input_file_positions[file_number] = -1;
         }
     }else{
     	// printf ("here 333333\n");
-        free(filename);
+//        free(output_file);
         return FAILURE;
     }
 
 
 
 	// printf ("here 444444\n");
-	free(filename);
+//	free(output_file);
 	fclose(fp);
 
 	return SUCCESS;

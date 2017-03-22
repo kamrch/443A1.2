@@ -6,13 +6,13 @@
 
 
 /**
-* Compares two records a and b
-* with respect to the value of the integer field f.
-* Returns an integer which indicates relative order:
-* positive: record a > record b
-* negative: record a < record b
-* zero: equal records
-*/
+ * Compares two records a and b
+ * with respect to the value of the integer field f.
+ * Returns an integer which indicates relative order:
+ * positive: record a > record b
+ * negative: record a < record b
+ * zero: equal records
+ */
 
 //taken from handout
 int compare (const void *a, const void *b) {
@@ -41,26 +41,26 @@ int merge_runs_init(int block_size, int total_mem, int buffer_num) {
     //set up attributes of MergeManager shown in merge.h
     int block_num = total_mem / block_size;
     int records_per_block = block_size / sizeof(Record);
-
+    
     int blocks_per_buffer = block_num / (buffer_num+1);
     int records_per_buffer = records_per_block * blocks_per_buffer;
-
+    
     manager->heap_capacity = buffer_num;
     manager->heap = (HeapElement *)calloc(buffer_num, sizeof(HeapElement));
     manager->input_buffer_capacity = records_per_buffer;
     strcpy(manager->input_prefix, "output");
-
+    
     strcpy(manager->output_file_name , "sorted_merge.dat");
-
+    
     if (block_num % (buffer_num+1) > 0){
-    // Take account for the last block with remaining contents
+        // Take account for the last block with remaining contents
         int remaining_block = block_num % (buffer_num+1);
         manager->output_buffer_capacity = records_per_buffer + records_per_block * remaining_block;
     }
     else {
         manager->output_buffer_capacity = records_per_buffer;
     }
-
+    
     int input_file_numbers[buffer_num];
     int current_file_positions[buffer_num];
     int current_buffer_positions[buffer_num];
@@ -88,29 +88,29 @@ int merge_runs_init(int block_size, int total_mem, int buffer_num) {
 
 // function for Phase 1 of 2PMMS
 int main(int argc, char *argv[]){
-
+    
     if (argc != 4){
         printf ("Usage: disk_sort <file_name> <total_memory> <block_size>\n");
         exit(1);
     }
-
+    
     char *input_file = argv[1];
     int total_mem = atoi(argv[2]);
     int block_size = atoi(argv[3]);
     FILE *fp_read;
-
+    
     //check if enough memory
     if(block_size > total_mem){
         printf("Error: Block size is larger than total memory.\n");
         exit(0);
     }
     int block_num = (total_mem / block_size);
-
+    
     if (!(fp_read= fopen (input_file , "rb" ))) {
         printf ("Error when reading file \"%s\"\n", input_file);
         exit(0);
     }
-
+    
     /*finding the file size and total number of records*/
     fseek(fp_read, 0, SEEK_END);
     int file_size = ftell(fp_read);
@@ -122,21 +122,21 @@ int main(int argc, char *argv[]){
     //find the number of records in each chunk
     int chunk_records = records_per_block * block_num;
     int remaining_chunk_records = remaining_chunk / sizeof(Record);
-
+    
     int sublist = chunks;
     if (remaining_chunk == 0){
         sublist++;
     }
-
+    
     if ((sublist+1) > total_mem/block_size){
         perror("Error: not enough memory allocated.");
         exit(1);
     }
-
+    
     //reset pointer location
     fseek(fp_read, 0, SEEK_SET);
     int i = 0;
-
+    
     while (i < chunks+1) {
         FILE *fp_write;
         char output_file[MAX_PATH_LENGTH];
@@ -160,7 +160,7 @@ int main(int argc, char *argv[]){
             } else {
                 break;
             }
-
+            
         } else {    
             Record * buffer = (Record *) calloc (chunk_records, sizeof (Record));
             if (fread (buffer, sizeof(Record), chunk_records, fp_read) == 0){
@@ -174,7 +174,7 @@ int main(int argc, char *argv[]){
         }
         fclose(fp_write);
         i++;
-
+        
     }
     fclose(fp_read);
     //merge here
